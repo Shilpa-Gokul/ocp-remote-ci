@@ -3,7 +3,8 @@ set -xeu
 
 APICI_BUILD01="\<apici_build01\>"
 APICI_BUILD02="\<apici_build02\>"
-declare -a APICIS=( apici_build01 apici_build02 )
+APICI_BUILD03="\<apici_build03\>"
+declare -a APICIS=( apici_build01 apici_build02 apici_build03 )
 
 function restart_apici ()
 {
@@ -114,7 +115,19 @@ then
 		exit 1
 	fi
 fi
-
+if [[ ${APICIS[*]} =~ $APICI_BUILD03 ]]
+then
+	if [[ ! -v LOGIN_TOKEN_B03 ]]
+	then
+		echo "ERROR: LOGIN_TOKEN_B03 environment variable must be set!"
+		exit 1
+	fi
+	if [[ -z "${LOGIN_TOKEN_B03}" ]]
+	then
+		echo "ERROR: LOGIN_TOKEN_B03 environment variable must have a value!"
+		exit 1
+	fi
+fi
 declare -a PROGRAMS=( git oc jq )
 for PROGRAM in ${PROGRAMS[@]}
 do
@@ -185,6 +198,16 @@ fi
 if [[ ${APICIS[*]} =~ $APICI_BUILD02 ]]
 then
 	TOKEN_B02=$(get_token ${LOGIN_TOKEN_B02} "https://api.build02.gcp.ci.openshift.org:6443")
+	RC=$?
+	if [ ${RC} -gt 0 ]
+	then
+		exit 1
+	fi
+fi
+
+if [[ ${APICIS[*]} =~ $APICI_BUILD03 ]]
+then
+	TOKEN_B03=$(get_token ${LOGIN_TOKEN_B03} "https://api.build03.ky4t.p1.openshiftapps.com:6443")
 	RC=$?
 	if [ ${RC} -gt 0 ]
 	then
@@ -262,6 +285,10 @@ fi
 if [[ ${APICIS[*]} =~ $APICI_BUILD02 ]]
 then
 	sed -i -e 's,TOKEN=__,TOKEN='${TOKEN_B02}',' libvirt/tunnel/apici_build02.service
+fi
+if [[ ${APICIS[*]} =~ $APICI_BUILD03 ]]
+then
+	sed -i -e 's,TOKEN=__,TOKEN='${TOKEN_B03}',' libvirt/tunnel/apici_build03.service
 fi
 
 declare -a LIBVIRT_FILES_NEW_SHA
